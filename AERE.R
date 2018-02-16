@@ -29,6 +29,21 @@ for (file in filelist) {
 }
 
 par(mfrow=c(5,5))
-for (i in (1:length(filelist))){if (is.numeric(literatureList[[i]]$Year)){hist(literatureList[[i]]$Year,breaks = length(na.omit(unique(literatureList[[i]]$Year))) , main=literatureList[[i]]$Source.title[1])} else {hist(1:100,main=literatureList[[i]]$Source.title[1],col="gray")}}
+for (i in (1:length(filelist))){if (is.numeric(literatureList[[i]]$Year)){hist(literatureList[[i]]$Year,breaks = (max(na.omit(literatureList[[i]]$Year))-min(na.omit(literatureList[[i]]$Year))) , main=literatureList[[i]]$Source.title[1])} else {hist(1:100,main=literatureList[[i]]$Source.title[1],col="gray")}}
 plot.new()
 #dev.off()
+
+
+#trial with txt tab delim
+
+literature <- read.delim2(paste(getwd(), "/AERE/", "bibliometrics.txt",sep=""), header = T, 
+                          fileEncoding = "UTF-16", row.names = NULL,
+                          quote = "", stringsAsFactors=FALSE )
+# Fix misplaced column names
+data.names <- names(literature)[2:length(names(literature))]
+literature <- literature[, 1:(ncol(literature) - 1)]
+names(literature) <- data.names
+
+
+# for later use when matching acronyms with full variable names0:
+fieldtags <- read.csv(paste(getwd(),  "/AERE/", "/fieldtags.csv", sep=""), header = T, sep = ";")
