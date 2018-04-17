@@ -52,7 +52,7 @@ names(literatureList) <- v
 
 #trial with txt tab delim
 
-literatureTEST <- read.delim2("C:\\Users\\nilsd\\Dropbox\\Dokumente\\doctorate\\agriculture\\AERE\\WoStxt\\AJAE_1-500.txt", header = T, encoding = "UTF-16", row.names = NULL, quote = "", stringsAsFactors=FALSE, skipNul=T,comment.char="")
+# literatureTEST <- read.delim2("C:\\Users\\nilsd\\Dropbox\\Dokumente\\doctorate\\agriculture\\AERE\\WoStxt\\AJAE_1-500.txt", header = T, encoding = "UTF-16", row.names = NULL, quote = "", stringsAsFactors=FALSE, skipNul=T,comment.char="")
 
 # # Fix misplaced column names
 # data.names <- names(literature)[2:length(names(literature))]
