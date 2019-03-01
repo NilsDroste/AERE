@@ -405,7 +405,7 @@ names(allx) <- c("Topic#","Top10 prob keyword","Top10 frex keywords","Top10 prob
 wb <- createWorkbook(type = "xlsx")
 sheet  <- createSheet(wb, sheetName = "keywords")
 addDataFrame(allx, sheet,col.names = TRUE, row.names = F)
-saveWorkbook(wb, "AllKeywords.xlsx")
+saveWorkbook(wb, paste(here(),"/SI/AllKeywords.xlsx", sep = ""))
 
 
 # top 250 most probable doc per topic and order by citation counts
@@ -431,6 +431,6 @@ for (i in topiclistpub$Topic.No) {
   sheet  <- createSheet(wb, sheetName = paste(topiclistpub$Topic.Name[which(topiclistpub$Topic.No==i)]))
   addDataFrame(df, sheet, col.names = TRUE, row.names = F)
 }
-saveWorkbook(wb, "Top250Articles.xlsx")
+saveWorkbook(wb, paste(here(), "Top250Articles.xlsx", sep=""))
 rm(list = c("wb", "sheet", "df"))
 
