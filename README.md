@@ -1,8 +1,8 @@
-# AERE -- Structural Topic Models (STM) of Ag. and Env. Econ. research topics
+# AERE - Structural Topic Models (STM) of Ag. and Env. Econ. research topics
 
 A project in collaboration with *Bartosz Bartkowski* and *Robert Finger*. This is the analytical code.
 
-The paper **Topics in agricultural and environmental economics –- a large-scale bibliometric analysis** has been submitted.
+The paper **Topics in agricultural and environmental economics – a large-scale bibliometric analysis** has been submitted.
 
 In this repository you find:
 
