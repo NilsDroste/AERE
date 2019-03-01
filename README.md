@@ -32,5 +32,5 @@ The seperate files are
 The fieldtags.csv file provides some additional information on the WoS data variable codings.
 Reference: https://github.com/aknutas/nails 
 
-+ The stminsights subfolder provides the shiny app for stminsights that can be accessed at: https://ndroste.shinyapps.io/stminsights/
++ The stminsights subfolder provides the shiny app for stminsights that can be accessed at: https://ndroste.shinyapps.io/stminsights/, where the stminsights.RData can be uploaded to inspect the STM model.
 Reference: https://github.com/cschwem2er/stminsights 

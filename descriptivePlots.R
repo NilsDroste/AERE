@@ -28,7 +28,7 @@ yearPlot_ERE <- ggplot(meta[meta$AEorERE=="ERE",], aes(year)) +
   scale_y_continuous(limits = c(0, 1550))
 
 cowplot::plot_grid(yearPlot,yearPlot_AE,yearPlot_ERE, align = "hv", ncol=3)
-ggsave("/figs/year_plots_descript.png", width=21, height=7, units = "cm")
+ggsave(paste(here(), "/figs/year_plots_descript.png", sep=""), width=21, height=7, units = "cm")
 
 # Authors ----
 listAU = strsplit(as.character(literature$Authors), split="; ")
@@ -79,7 +79,7 @@ authPlot_ERE <- ggplot(Authors_ERE[1:10,]) +
   ggtitle("ERE")
 
 cowplot::plot_grid(authPlot,authPlot_AE,authPlot_ERE, align = "hv", ncol=3)
-ggsave("/figs/auth_plots_descript.png", width=21, height=7, units = "cm")
+ggsave(paste(here(), "/figs/auth_plots_descript.png", sep=""), width=21, height=7, units = "cm")
 
 
 # Locations ----
@@ -167,7 +167,7 @@ Map_ERE <-
   mapCountryData(location_map_ERE, nameColumnToPlot="Freq", mapTitle="\n\n\n\n\nERE", addLegend=F, colourPalette="white2Black", catMethod="logFixedWidth")
 do.call( addMapLegend, c(Map_ERE, legendWidth=.5, legendShrink=.875, legendMar = 2, legendLabels="all", legendIntervals="page", tcl=-0.25))  
 
-dev.print(file= "/figs/locationsPlot.png", device=png, width=3200, height= 900, res=300)
+dev.print(file= paste(here(), "/figs/locationsPlot.png", sep = ""), device=png, width=3200, height= 900, res=300)
 
 dev.off()
 
@@ -194,7 +194,7 @@ TopCiteEREplot <- ggplot(MostCitedPapers[MostCitedPapers$AEorERE=="ERE",2:3][1:1
   ggtitle("ERE")
 
 cowplot::plot_grid(TopCiteAEplot,TopCiteEREplot, align = "hv", ncol=1)
-ggsave("/figs/TopCitedPaper.png", width=20, height=15, units = "cm")
+ggsave(paste(here(), "/figs/TopCitedPaper.png", sep=""), width=20, height=15, units = "cm")
 
 # publications per journal ----
 literature$ISOSourceAbbreviation[literature$ISOSourceAbbreviation=="Can. J. Agric. Econ.-Rev. Can. Agroecon."] <-
