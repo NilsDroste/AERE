@@ -1,0 +1,10 @@
+name: stminsights
+title:
+username:
+account: ndroste
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 565276
+bundleId: 1695733
+url: https://ndroste.shinyapps.io/stminsights/
+when: 1542017641.24819
