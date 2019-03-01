@@ -23,7 +23,7 @@ The seperate files are
 
 4. The descriptivePlots.R file provides the code for plotting bibliometric info
 
-5. 
+5. The stmDeep.R file extracts further details, plots topic figures, and outputs supplementary material
 
 
 ## Additionally
