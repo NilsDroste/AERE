@@ -431,6 +431,6 @@ for (i in topiclistpub$Topic.No) {
   sheet  <- createSheet(wb, sheetName = paste(topiclistpub$Topic.Name[which(topiclistpub$Topic.No==i)]))
   addDataFrame(df, sheet, col.names = TRUE, row.names = F)
 }
-saveWorkbook(wb, paste(here(), "Top250Articles.xlsx", sep=""))
+saveWorkbook(wb, paste(here(), "/SI/Top250Articles.xlsx", sep=""))
 rm(list = c("wb", "sheet", "df"))
 
