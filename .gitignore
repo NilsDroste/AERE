@@ -2,3 +2,16 @@
 .Rhistory
 .RData
 .Ruserdata
+Userdata.R
+data/*
+figs/*
+SI/*
+stminsights/*
+stminsights_*
+check_updates.R
+CJAE.R
+doi.RData
+literature.RData
+OldCode.R
+STMwordclouds.R
+WoSNr.RData

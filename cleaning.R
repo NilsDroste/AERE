@@ -5,7 +5,7 @@
 
 #List files in input folder
 filelist <- list()
-filelist <- list.files("/home/ubuntu/Desktop/WoStxt", full.names = T) # this needs to be the directory where WoS Data is stored
+filelist <- list.files(paste0(here(),"/WoStxt"), full.names = T) # this needs to be the directory where WoS Data is stored
 
 # TODO: use readr packages to omit enconding hell on windows!
 # Load files in the input folder and merge into a single file
@@ -29,14 +29,10 @@ literature_full <- literature_full[, 1:(ncol(literature_full) - 1)]
 names(literature_full) <- data.names
 rm(data.names) # cleaning up
 
-# Create and add id variable
-id <- c(1:nrow(literature_full))
-literature_full <- cbind(as.data.frame(id), literature_full)
-rm(id) # cleaning up
 
 # for later use when matching acronyms with full variable names:
 # TODO: update fieldtags, which are not complete
-fieldtags <- read.csv(paste("/home/ubuntu/Desktop", "/fieldtags.csv", sep=""), header = T, sep = ";")
+fieldtags <- read.csv(paste0(here(), "/fieldtags.csv"), header = T, sep = ";")
 
 # Fix variable names
 tags <- names(literature_full)       # Extract column names
@@ -53,10 +49,42 @@ names(literature_full)[names(literature_full) == "29-CharacterSourceAbbreviation
 names(literature_full)[names(literature_full) == "DigitalObjectIdentifier(DOI)" ] <- "DOI"
 rm(fields) # cleaning up
 
-# subset to those with a non-empty abstract of the initial set of 32443 entries
-literature <- literature_full[literature_full$Abstract != "",] #excluding 8304 empty abstracts
-literature <- literature_full[-which(is.na(literature_full$Abstract)),]# exluding 500 entries with DocumentType == "Meeting Abstract" that only has "NA" abstracts
 
+# UPDATE
+# this works on windows, too
+
+# read in data
+files <-  paste0(here(),"/data/update/", list.files(paste0(here(),"/data/update"))) %>% str_subset( "update_2017-19")
+M <- convert2df(files, dbsource = "isi", format = "plaintext")
+
+fieldtags <- read.csv(paste0(here(), "/fieldtags.csv"), header = T, sep = ";")
+
+# Fix variable names
+tags <- names(M)       # Extract column names
+# Match column names (acronyms) with full column names
+fields <- as.character(fieldtags$field[match(tags, fieldtags$tag)])
+fields[is.na(fields)] <- tags[is.na(fields)]     # Throws warnings but seems to be working
+fields <- gsub(" ", "", fields)
+rm(list= c("tags","fieldtags"))
+
+names(M) <- fields
+names(M)[names(M) == "PublicationType(conference,book,journal,bookinseries,orpatent)"] <- "PublicationType"
+names(M)[names(M) == "29-CharacterSourceAbbreviation"] <- "SourceAbbreviation"
+names(M)[names(M) == "DigitalObjectIdentifier(DOI)" ] <- "DOI"
+
+rm(M,D,fields, files)
+
+# merge data and exclude duplicates
+literature_update <- M %>% mutate(CitedReferenceCount = as.numeric(CitedReferenceCount), Z9 = as.numeric(Z9), U1 = as.numeric(U1), U2 = as.numeric(U2), Volume =as.numeric(Volume), PageCount = as.numeric(PageCount), PM = as.numeric(PM)) 
+literature_full_to_update <- bind_rows(literature_full, literature_update) %>% filter(YearPublished <=2019) %>% mutate( SourceAbbreviation = ifelse(SourceAbbreviation == "AGR ECON-BLACKWELL", "AGR ECON", SourceAbbreviation), SourceAbbreviation = ifelse(SourceAbbreviation == "ENERG J", "ENERGY J", SourceAbbreviation))
+literature_full_update <- literature_full_to_update %>% filter(!duplicated(literature_full_to_update$UniqueArticleIdentifier))
+
+
+# Create and add id variable
+literature_full_update <- literature_full_update %>% mutate(id = c(1:nrow(literature_full_update)))
+
+# subset to those with a non-empty abstract of the initial set of 33317 entries
+literature <- literature_full_update %>% mutate(Abstract=na_if(Abstract, "")) %>% filter(!is.na(Abstract)) #excluding empty abstracts
 
 #Format Data
 literature$AuthorFullName <- toupper(literature$AuthorFullName)
@@ -83,17 +111,35 @@ literature$CitedReferences <- gsub('"', "", literature$CitedReferences)
 literature$CitedReferences <- toupper(literature$CitedReferences)
 literature$CitedReferences <- gsub("DOI DOI", "DOI", literature$CitedReferences)
 
+literature$ISOSourceAbbreviation <- toupper(literature$ISOSourceAbbreviation)
+
 literature$TimesCited <- as.numeric(as.character(literature$TimesCited))
 
 literature$YearPublished <- as.numeric(as.character(literature$YearPublished))
 
-literature$DOI <- toupper(literature$DOI)
+# literature$DOI <- toupper(literature$DOI)
+# literature <- literature %>% filter(!duplicated(literature$DOI)) # they all need to be upper to find all duplicates
+
 
 literature$SourceAbbreviation[literature$SourceAbbreviation == "AGR ECON-BLACKWELL"] <-
   "AGR ECON"
 literature$SourceAbbreviation[literature$SourceAbbreviation == "ENERGY J"] <-
   "ENERG J"
 
-#write out literature.RData
-save(literature, literature_full, file = paste(here(),"literature.RData",sep=""))
+# get article numbers per journal
+literature_full_update %>% select(SourceAbbreviation) %>% table()
+literature %>% select(SourceAbbreviation) %>% table()
 
+# translate the french abstracts from Can J Ag Econ
+source(paste(here(), "/CJAE.R", sep = ""))
+
+# update citation counts
+# source("Userdata.R") # reading in userdata for WOS
+# sid <- auth() # Get session ID
+# wosr::pull_incites()
+
+
+#write out literature.RData
+save(literature, literature_full, literature_full_update, literature_update, file = paste0(here(),"/literature.RData"))
+             
+             

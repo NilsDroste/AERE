@@ -5,7 +5,8 @@
 cat("loading data...\n")
 load(paste(here(), "/literature.RData", sep=""))
 
-literature$AEorERE <- as.factor(ifelse(literature$ISOSourceAbbreviation %in% c("Agric. Econ.","Appl. Econ. Perspect. Policy","Am. J. Agr. Econ.","Aust. J. Agr. Resour. Econ.","Can. J. Agric. Econ.-Rev. Can. Agroecon.","Eur. Rev. Agric. Econ.","Food Policy","Agribusiness","J. Agric. Econ.","J. Agric. Resour. Econ."), "AE","ERE"))
+literature$AEorERE <- as.factor(ifelse(literature$ISOSourceAbbreviation %in% toupper(c("Agric. Econ.","Appl. Econ. Perspect. Policy","Am. J. Agr. Econ.","Aust. J. Agr. Resour. Econ.","Can. J. Agric. Econ.-Rev. Can. Agroecon.","Eur. Rev. Agric. Econ.","Food Policy","Agribusiness","J. Agric. Econ.","J. Agric. Resour. Econ.")), "AE","ERE"))
+
 
 # output per year and field ----
 yearPlot <- ggplot(meta, aes(year)) +
@@ -86,6 +87,7 @@ ggsave(paste(here(), "/figs/auth_plots_descript.png", sep=""), width=21, height=
 
 source("helperFunctions.R")
 
+literature$AuthorAddress[which(is.na(literature$AuthorAddress))] <- ""
 literature$Locations <- sapply(literature$AuthorAddress, get_location)
 
 for (i in c("AE","ERE","total")){
@@ -171,15 +173,18 @@ dev.print(file= paste(here(), "/figs/locationsPlot.png", sep = ""), device=png, 
 
 dev.off()
 
-# Top citation papers
-MostCitedPapers = data.frame(literature$id,paste(literature$Authors, paste("(", literature$YearPublished, ")", sep = ""), literature$ISOSourceAbbreviation, sep = ","), literature$TimesCited, literature$AEorERE)
-MostCitedPapers = MostCitedPapers[order(literature$TimesCited, decreasing = TRUE), ]
-names(MostCitedPapers) = c("id", "Paper", "TimesCited", "AEorERE")
+# get the updated citation counts
+literature_updated_citations <- literature %>% left_join(final_update %>% select(code, citation) %>% rename(citation_update = citation), by = c("UniqueArticleIdentifier" = "code")) %>% mutate(citation_update = ifelse(is.na(citation_update), TimesCited, citation_update))
 
+# Top citation papers
+MostCitedPapers = data.frame(literature_updated_citations$id,paste(literature_updated_citations$Authors, paste("(", literature_updated_citations$YearPublished, ")", sep = ""), literature_updated_citations$ISOSourceAbbreviation, sep = ","), literature_updated_citations$citation_update, literature_updated_citations$AEorERE)
+MostCitedPapers = MostCitedPapers[order(literature_updated_citations$citation_update, decreasing = TRUE), ]
+names(MostCitedPapers) = c("id", "Paper", "TimesCited", "AEorERE")
+MostCitedPapers <- MostCitedPapers %>% mutate(Paper = toupper(Paper))
 
 TopCiteAEplot <- ggplot(MostCitedPapers[MostCitedPapers$AEorERE=="AE",2:3][1:10,]) +
   geom_col(aes(x=reorder(Paper, TimesCited),y=TimesCited), fill = "darkgrey") +
-  scale_y_continuous(limits = c(0, 2000)) +
+  scale_y_continuous(limits = c(0, 2500)) +
   coord_flip() +
   xlab("") +
   ylab("") +
@@ -187,7 +192,7 @@ TopCiteAEplot <- ggplot(MostCitedPapers[MostCitedPapers$AEorERE=="AE",2:3][1:10,
 
 TopCiteEREplot <- ggplot(MostCitedPapers[MostCitedPapers$AEorERE=="ERE",2:3][1:10,]) +
   geom_col(aes(x=reorder(Paper, TimesCited),y=TimesCited), fill = "darkgrey") +
-  scale_y_continuous(limits = c(0, 2000)) +
+  scale_y_continuous(limits = c(0, 2500)) +
   coord_flip() +
   xlab("") +
   ylab("") +
@@ -208,7 +213,7 @@ pubsAE <- literature %>%
   arrange(-n) %>% 
   ggplot() +
   geom_col(aes(x=reorder(ISOSourceAbbreviation, n),y=n), fill = "darkgrey") +
-  scale_y_continuous(limits = c(0, 4500)) +
+  scale_y_continuous(limits = c(0, 5000)) +
   coord_flip() +
   xlab("") +
   ylab("Number of articles") +
@@ -219,7 +224,7 @@ pubsERE <- literature %>%
   arrange(-n) %>% 
   ggplot() +
   geom_col(aes(x=reorder(ISOSourceAbbreviation, n),y=n), fill = "darkgrey") +
-  scale_y_continuous(limits = c(0, 4500)) +
+  scale_y_continuous(limits = c(0, 5000)) +
   coord_flip() +
   xlab("") +
   ylab("Number of articles") +

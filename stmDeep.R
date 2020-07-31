@@ -1,256 +1,291 @@
 
 # 05 Extract details of STM model and plot topic figures ----
 
+load("stminsights_alt.RData")
+load("literature.RData")
 
-# Journal prevalence -----
+# get keywords for topics information ----
 
-# extract STM interaction model details
-cthis.int <-
-  stm:::produce_cmatrix(
-    prep = prep.LeeMimno.cont.int,
-    covariate = "journal",
-    method = "pointestimate",
-    cov.value1 = NULL,
-    cov.value2 = NULL,
-    npoints = 100,
-    moderator = NULL,
-    moderator.value = NULL
-  )
-cdata.int <- cthis.int$cdata
-cmat.int <- cthis.int$cmatrix
-simbetas.int <- stm:::simBetas(prep.LeeMimno.cont.int$parameter)
-ci.level <-  0.95
-offset <- (1 - ci.level)/2 # with ci.level = 0.95
+n = 10 #how many words
 
+# get topic description / keywords by different measures
+sageLabs.int <- sageLabels(stm.mod.spec.LeeMimno.cont.int.alt, n = n)
+labels.int <- labelTopics(stm.mod.spec.LeeMimno.cont.int.alt, n = n)
 
-# iterate the extraction over all topics and generate journal prevalence plots per field
-sims.int = list()
-gplots.cont.int <- list()
+# write xlsx file with keyword topic descriptions on all topics
 
-#for all topics do ...
-for (i in 1:stm.mod.spec.LeeMimno.cont.int$settings$dim$K) {
-  #building the simulations for topic model proportions
-  sims.int[[i]] <-
-    cmat.int %*% t(simbetas.int[[which(prep.LeeMimno.cont.int$topics == prep.LeeMimno.cont.int$topics[i])]])
-  dimnames(sims.int[[i]]) <- list(unique(meta$journal))
-  
-  #built dataframe
-  trial.int <- stack(as.data.frame(t(sims.int[[i]])))
-  trial.int$AEorERE <-
-    as.factor(ifelse(
-      trial.int$ind %in% c(
-        "Agric. Econ.",
-        "Appl. Econ. Perspect. Policy",
-        "Am. J. Agr. Econ.",
-        "Aust. J. Agr. Resour. Econ.",
-        "Can. J. Agric. Econ.-Rev. Can. Agroecon.",
-        "Eur. Rev. Agric. Econ.",
-        "Food Policy",
-        "Agribusiness",
-        "J. Agric. Econ.",
-        "J. Agric. Resour. Econ."
-      ),
-      "AE",
-      "ERE"
-    ))
-  names(trial.int)[2] <- "journal"
-  levels(trial.int$journal)[which(levels(trial.int$journal) == "Can. J. Agric. Econ.-Rev. Can. Agroecon.")] <-
-    "Can. J. Agric. Econ."
+# extract most propable words by different measures 
+probs <- vector(); probs_journals <- list() # frexs <- vector(); probsAE <- vector(); probsERE <- vector(); frexsAE <- vector(); frexsERE <- vector()
 
-  #plotting group wise facets
-  gplots.cont.int[[i]] <- ggplot(trial.int) +
-    geom_boxplot(aes(x = journal, y = values, fill = AEorERE)) + coord_flip() +
-    facet_grid(AEorERE ~ ., scales = "free_y") +
-    theme(
-      legend.position = "none",
-      axis.title.y = element_blank()
-    ) +
-    labs(title="Journal prevalence per field", y = "Expected Topic Proportion" )
+for (i in 1:stm.mod.spec.LeeMimno.cont.int.alt$settings$dim$K) {
+  p <-
+    paste(sageLabs.int$marginal$prob[i, ], collapse = ", ")
+  probs[i] <-  p
 }
+# probs_all <- probs %>% as.data.frame()
+# names(probs_all)
 
-# freeing up space
-rm(list = c(
-  "cdata.int",
-  "cmat.int",
-  "cthis.int",
-  "simbetas.int",
-  "trial.int"
-))
-
-
-
-# Time prevalence ----
-
-# extract time prevalence interaction model details and plot them 
-cthis_y.int <-
-  stm:::produce_cmatrix(
-    prep = prep.LeeMimno.cont.int,
-    covariate = "year",
-    method = "continuous",
-    cov.value1 = NULL,
-    cov.value2 = NULL,
-    npoints = 25,
-    moderator = NULL,
-    moderator.value = NULL
-  )
-cdata_y.int <- cthis_y.int$cdata
-cmat_y.int <- cthis_y.int$cmatrix
-simbetas_y.int <- stm:::simBetas(prep.LeeMimno.cont.int$parameter)
-
-sims_y.int = list()
-means_y.int = list()
-
-# iterate over all topics
-for (i in 1:stm.mod.spec.LeeMimno.cont.int$settings$dim$K) {
-  #building the simulations for topic model proportions
-  sims_y.int[[i]] <-
-    cmat_y.int %*% t(simbetas_y.int[[which(prep.LeeMimno.cont.int$topics == prep.LeeMimno.cont.int$topics[i])]])
-  # dimnames(sims_y.int[[i]]) <- list(unique(meta$year))
-  means_y.int[[i]] <- rowMeans(sims_y.int[[i]])
-}
-
-# # extract linear time trend coefficient
-# m_y.int <- vector()
-# for (i in 1:length(means_y.int)) {
-#   m_y.int[i] <- mean(means_y.int[[i]])
-# }
-# # get the list with hottest (strongest increase)
-# top9.estTopProp.cont.year.int <- order(m_y.int, decreasing = T)[1:9]
-
-
-# Hottest topics ----
-# (by strongest increase in prevalence over time) 
-# includes plotting time prevalence figures
-
-hottest9.LeeMimno.cont.int <- data.frame()
-
-dattoestimAE <- list()
-dattoestimERE <- list()
-time.plots <- list()
-time.dataAE <- list()
-time.dataERE <- list()
-time.data.both <- list()
-
-hottest9.LeeMimno.cont.intAE <- data.frame()
-hottest9.LeeMimno.cont.intERE <- data.frame()
-hottest9.LeeMimno.cont.intBOTH <- data.frame()
-
-for (i in 1:stm.mod.spec.LeeMimno.cont.int$settings$dim$K) {
-  
-  # AE
-  time.dataAE.intermed <- data.frame()
-  
-  for (j in c(
-    "Agric. Econ.",
-    "Appl. Econ. Perspect. Policy",
-    "Am. J. Agr. Econ.",
-    "Aust. J. Agr. Resour. Econ.",
-    "Can. J. Agric. Econ.-Rev. Can. Agroecon.",
-    "Eur. Rev. Agric. Econ.",
-    "Food Policy",
-    "Agribusiness",
-    "J. Agric. Econ.",
-    "J. Agric. Resour. Econ."
-  )) {dattoestimAE[[j]] <- extract.estimateEffect(
-        prep.LeeMimno.cont.int,
-        covariate = "year",
-        method = "continuous",
-        topics = i,
-        moderator = "journal",
-        moderator.value = j
-      )
-    
-    time.dataAE.intermed <- rbind(time.dataAE.intermed,dattoestimAE[[j]])
+# for (i in 1:stm.mod.spec.LeeMimno.cont.int.alt$settings$dim$K) {
+for (j in 1:length(sageLabs.int$cov.betas)) {
+  p <- sageLabs.int$cov.betas[[j]][[1]] %>% as.data.frame()
+  p_collapsed <- p %>% unite(col="z", sep=", ")
+  names(p_collapsed) <- paste("most probable words in", sageLabs.int$covnames[[j]])
+  probs_journals[[j]] <- p_collapsed 
   }
-  names(time.dataAE.intermed)[names(time.dataAE.intermed)=="covariate.value"] <- "year"
-  time.dataAE[[i]] <- time.dataAE.intermed %>% group_by(year) %>% summarise(means=mean(estimate),ci_min=mean(ci.lower),ci_max=mean(ci.upper))
-  
-  # ERE
-  time.dataERE.intermed <- data.frame()
-  
-  for (j in c(
-    "Annu. Rev. Resour. Econ.",
-    "Ecol. Econ.",
-    "Energy J.",
-    "Energy Econ.",
-    "Environ. Resour. Econ.",
-    "J.Environ.Econ.Manage.",
-    "Land Econ.",
-    "Mar. Resour. Econ.",
-    "Resour. Energy Econ.",
-    "Rev. Env. Econ. Policy"
-  )) {
-    dattoestimERE[[j]] <- extract.estimateEffect(
-        prep.LeeMimno.cont.int,
-        covariate = "year",
-        method = "continuous",
-        topics = i,
-        moderator = "journal",
-        moderator.value = j
-      )
-    
-    time.dataERE.intermed <- rbind(time.dataERE.intermed,dattoestimERE[[j]])
-  }
-  names(time.dataERE.intermed)[names(time.dataERE.intermed)=="covariate.value"] <- "year"
-  time.dataERE[[i]] <- time.dataERE.intermed %>% group_by(year) %>% summarise(means=mean(estimate),ci_min=mean(ci.lower),ci_max=mean(ci.upper))
-  
-  # both
-  time.data.both[[i]] <- rbind(time.dataAE[[i]] %>% mutate(AEorERE="AE"),time.dataERE[[i]] %>% mutate(AEorERE="ERE"))
-  
-  time.plots[[i]] <-
-    ggplot(time.data.both[[i]],
-           aes(
-             x = year,
-             y = means,
-             ymin = ci_min,
-             ymax = ci_max,
-             group = AEorERE,
-             fill = AEorERE
-           )) +
-    geom_line(aes(colour = AEorERE), size = 1.25) +
-    geom_ribbon(alpha = 0.3) +
-    labs(y = "Expected Topic Proportion") +
-    ggtitle("Average journal prevalence over time per field")
 
-  resAE <- lm(means~year,time.dataAE[[i]])
-  resERE <- lm(means~year,time.dataERE[[i]])
-  resBOTH <- lm(means~year,time.data.both[[i]])
-  hottest9.LeeMimno.cont.intAE <- rbind(hottest9.LeeMimno.cont.intAE,c(i,resAE$coefficients[2]))
-  hottest9.LeeMimno.cont.intERE <- rbind(hottest9.LeeMimno.cont.intERE,c(i,resERE$coefficients[2]))
-  hottest9.LeeMimno.cont.intBOTH <- rbind(hottest9.LeeMimno.cont.intBOTH,c(i,resBOTH$coefficients[2]))
-}
+probs_journals_dataframe <- as.data.frame(do.call(cbind, probs_journals))
 
-# renaming
-names(hottest9.LeeMimno.cont.intAE) <- c("topic","coefficient")
-names(hottest9.LeeMimno.cont.intERE) <- c("topic","coefficient")
-names(hottest9.LeeMimno.cont.intBOTH) <- c("topic","coefficient")
 
-# extract hottest topics
-hottest9.LeeMimno.cont.intAE <- order(hottest9.LeeMimno.cont.intAE$coefficient,decreasing = T)[1:9]
-hottest9.LeeMimno.cont.intERE <- order(hottest9.LeeMimno.cont.intERE$coefficient,decreasing = T)[1:9]
-hottest9.LeeMimno.cont.intBOTH <- order(hottest9.LeeMimno.cont.intBOTH$coefficient,decreasing = T)[1:9]
+# built a dataframe
+allx <- as.data.frame(cbind("Topic" = 1:stm.mod.spec.LeeMimno.cont.int.alt$settings$dim$K, "most probable words overall" = probs, probs_journals_dataframe))
 
-# extract topics to present ----
+# write out xlss
+wb <- createWorkbook(type = "xlsx")
+sheet  <- createSheet(wb, sheetName = "keywords")
+addDataFrame(allx, sheet,col.names = TRUE, row.names = F)
+saveWorkbook(wb, paste(here(),"/SI/AllKeywords2020.xlsx", sep = ""))
 
-# top 9 journal per average theta
-top9.estTopProp.cont.int <-
-  order(colMeans(stm.mod.spec.LeeMimno.cont.int$theta[, 1:stm.mod.spec.LeeMimno.cont.int$settings$dim$K]),
-        decreasing = T)[1:9] # similar but not equal
 
-# combine prevalent, thematical, methodological and hottest topics by top 3 in each
+# top 250 most probable doc per topic ----
+
+thoughts.int <-
+  findThoughts(
+    stm.mod.spec.LeeMimno.cont.int.alt,
+    texts = literature$Abstract,
+    n = 250,
+    topics = 1:stm.mod.spec.LeeMimno.cont.int.alt$settings$dim$K
+  )
+top.most.prob.docs.int <-
+  as.data.frame(t(as.data.frame(thoughts.int$index)))
+
+
+# time trends per AE or ERE ----
+
+effect <- lapply(c("AE", "ERE"), function(i) {
+  extract.estimateEffect(x = prep.LeeMimno.cont.int.alt,
+                         covariate = "year",
+                         method = "continuous",
+                         model = stm.mod.spec.LeeMimno.cont.int.alt,
+                         #labeltype = "frex",
+                         #n = 4,
+                         moderator = "AEorERE",
+                         moderator.value = i)
+})
+effect <- do.call("rbind", effect)
+
+# write out topic absolut change over different periods
+wb <- createWorkbook(type = "xlsx")
+
+sheet0  <- createSheet(wb, sheetName = "avg_estim_change_2yr")
+avg_estim_change_2yr <- effect %>% mutate(year = floor(covariate.value)) %>% group_by(topic, moderator.value, year) %>% summarise(estimate=mean(estimate)) %>% mutate(lag_estimate= lag(estimate,2), estimate_change=estimate-lag_estimate) %>% filter(year>=2017 & year<2019) %>% group_by(topic, moderator.value, year) %>% summarise(estimate_change = mean(estimate_change)) %>% ungroup() %>% filter(year==2018) %>% select(-year) %>% arrange(moderator.value, -estimate_change) %>% rename(AEorERE=moderator.value) %>% as.data.frame()
+addDataFrame(avg_estim_change_2yr, sheet0,col.names = TRUE, row.names = F)
+
+sheet1  <- createSheet(wb, sheetName = "avg_estim_change_5yr")
+avg_estim_change_5yr <- effect %>% mutate(year = floor(covariate.value)) %>% group_by(topic, moderator.value, year) %>% summarise(estimate=mean(estimate)) %>% mutate(lag_estimate= lag(estimate,5), estimate_change=estimate-lag_estimate) %>% filter(year>=2014 & year<2019) %>% group_by(topic, moderator.value, year)%>% summarise(estimate_change = mean(estimate_change)) %>% ungroup() %>% filter(year==2018) %>% select(-year) %>% arrange(moderator.value, -estimate_change) %>% rename(AEorERE=moderator.value) %>% as.data.frame()
+addDataFrame(avg_estim_change_5yr, sheet1,col.names = TRUE, row.names = F)
+
+sheet2  <- createSheet(wb, sheetName = "avg_estim_change_10yr")
+avg_estim_change_10yr <- effect %>% mutate(year = floor(covariate.value)) %>% group_by(topic, moderator.value, year) %>% summarise(estimate=mean(estimate)) %>% mutate(lag_estimate= lag(estimate,10), estimate_change=estimate-lag_estimate) %>% filter(year>=2009 & year<2019) %>% group_by(topic, moderator.value, year) %>% summarise(estimate_change = mean(estimate_change)) %>% ungroup() %>% filter(year==2018) %>% select(-year) %>% arrange(moderator.value, -estimate_change) %>% rename(AEorERE=moderator.value) %>% as.data.frame()
+addDataFrame(avg_estim_change_10yr, sheet2,col.names = TRUE, row.names = F)
+
+sheet3  <- createSheet(wb, sheetName = "avg_estim_change_15yr")
+avg_estim_change_15yr <- effect %>% mutate(year = floor(covariate.value)) %>% group_by(topic, moderator.value, year) %>% summarise(estimate=mean(estimate)) %>% mutate(lag_estimate= lag(estimate,15), estimate_change=estimate-lag_estimate) %>% filter(year>=2004 & year<2019) %>% group_by(topic, moderator.value, year) %>% summarise(estimate_change = mean(estimate_change)) %>% ungroup() %>% filter(year==2018) %>% select(-year) %>% arrange(moderator.value, -estimate_change) %>% rename(AEorERE=moderator.value) %>% as.data.frame()
+addDataFrame(avg_estim_change_15yr, sheet3,col.names = TRUE, row.names = F)
+
+saveWorkbook(wb, paste(here(),"/SI/HottestTopics2020_change.xlsx", sep = ""))
+
+# create dataframe of selected hot topics ----
+
 topiclistpub <- as.data.frame(cbind(
-  "Topic.No" = as.numeric(c( top9.estTopProp.cont.int[c(1:3)], #most prevalent and most boring topics
-                  top9.estTopProp.cont.int[c(4,8,9)], #most prevalent thematical topics
-                  top9.estTopProp.cont.int[c(5:7)], #most prevalent method topics
-                  c(hottest9.LeeMimno.cont.intBOTH[1],hottest9.LeeMimno.cont.intAE[1],hottest9.LeeMimno.cont.intERE[1]) #hottest topics
-  )),
-  "Topic.Name" =c("Reviews of economic literature", "Model calibration", "Behavioural modelling", "Sustainable development", "Optimal resource management",  "Economic development", "Sectoral modelling", "Causal inference", "Non-market valuation",  "Spatial valuation", "Species conservation", "Climate change")
+  "Topic.No" = c(3, 10, 12, 13, 14, 17, 33, 38, 45, 50) #hottest topics
+  ,
+  "Topic.Name" = c("farm business", "agents' behaviour", "choice experiments", "agricultural insurance", "market shocks",  "supply chain", "energy efficiency", "household income", "policy design", "biodiversity conservation"  ),
+  "Field" = c("AE", "both", "AE", "AE", "ERE", "AE", "ERE", "AE", "ERE", "ERE")
 ))
 
-topiclistpub$Topic.No <- as.numeric(as.character(topiclistpub$Topic.No))
+
+# write top 250 most propable articles to excel file ----
+
+# get the updated citation counts
+final_update <- read_csv("data/update/final_update.csv")
+literature_updated_citations <- literature %>% left_join(final_update %>% select(code, citation) %>% rename(citation_update = citation), by = c("UniqueArticleIdentifier" = "code")) %>% mutate(TimesCited = ifelse(is.na(citation_update), TimesCited, citation_update))
+
+# library(xlsx)
+wb <- createWorkbook(type = "xlsx")
+for (i in as.numeric(as.character(topiclistpub$Topic.No))) {
+  df <-
+    literature_updated_citations[as.numeric(top.most.prob.docs.int[i, ]), c("Authors",
+                                                          "YearPublished",
+                                                          "ISOSourceAbbreviation", "DocumentTitle",
+                                                          "Abstract","DOI", "TimesCited" )]
+  df <- df[order(df$TimesCited, decreasing = T),]
+  sheet  <- createSheet(wb, sheetName = paste0("Topic # ", i, " ", topiclistpub$Topic.Name[which(as.numeric(as.character(topiclistpub$Topic.No))==i)]))
+  addDataFrame(df, sheet, col.names = TRUE, row.names = F)
+}
+saveWorkbook(wb, paste(here(), "/SI/Top250Articles.xlsx", sep=""))
+rm(list = c("wb", "sheet", "df"))
+
+# plot time trends ----
+p1 <-
+  ggplot(
+    effect %>% filter(topic %in% topiclistpub$Topic.No) %>% left_join(
+      topiclistpub %>% mutate(Topic.No = as.numeric(Topic.No)),
+      by = c("topic" = "Topic.No")
+    ),
+    aes(
+      x = covariate.value,
+      y = estimate,
+      ymin = ci.lower,
+      ymax = ci.upper,
+      group = moderator.value,
+      scales = "free_y",
+      fill = factor(moderator.value),
+      col = factor(moderator.value)
+    )
+  ) +
+  facet_wrap( ~ Topic.Name, nrow = 8, scales = "free_y") +
+  geom_line() +
+  geom_ribbon(alpha = .5) +
+  theme(legend.position = "bottom") +
+  labs(x = "year",
+       y = "Expected Topic Proportion",
+       fill = "",
+       col = "") +
+  theme(plot.margin=unit(c(t=5.5, r=10, b=5.5, l=5.5), "points")) 
+
+ggsave( paste0(here(),"/Figs/Fig3.pdf"), p1,  height = 11.75, width = 8.8, units = "in")
+
+# wordcloud nach field ----
+
+# create new corpus by topics
+newcorpus <- data.frame()
+for (i in as.numeric(topiclistpub$Topic.No)) {
+  newcorpus <- literature %>% slice(top.most.prob.docs.int[i,] %>% as.numeric()) %>% bind_cols(topic = c(rep(topiclistpub$Topic.Name[which(topiclistpub$Topic.No==i)], 250))) %>% bind_rows(newcorpus)
+} 
+
+newcorpus <- newcorpus %>% select(Authors, YearPublished, DocumentTitle, ISOSourceAbbreviation, Abstract, topic)
+newcorpus[newcorpus$ISOSourceAbbreviation=="ANNU. REV. RESOUR. ECON","ISOSourceAbbreviation"] <- "ANNU. REV. RESOUR. ECON." # correcting typo
+newcorpus$AEorERE <- as.factor(ifelse(newcorpus$ISOSourceAbbreviation %in% toupper(c("Agric. Econ.","Appl. Econ. Perspect. Policy","Am. J. Agr. Econ.","Aust. J. Agr. Resour. Econ.","Can. J. Agric. Econ.-Rev. Can. Agroecon.","Eur. Rev. Agric. Econ.","Food Policy","Agribusiness","J. Agric. Econ.","J. Agric. Resour. Econ.")), "AE","ERE"))
+
+for (i in as.numeric(topiclistpub$Topic.No)) {
+  
+    newcorp_sub <- newcorpus %>% filter(topic == topiclistpub$Topic.Name[which(topiclistpub$Topic.No==i)], AEorERE=="AE")
+  vocabfreq_AE <- newcorp_sub$Abstract %>% VectorSource() %>% Corpus() %>% tm_map(content_transformer(tolower)) %>% tm_map(removeWords, c(stopwords("smart"), stopwords("french"),"elsevier", "wiley", "sons", "inc", "may","ltd")) %>% tm_map(removeNumbers) %>% tm_map(removePunctuation) %>% tm_map(stemDocument, language = "english") %>% TermDocumentMatrix() %>% as.matrix() %>% rowSums() %>% as.data.frame() %>% bind_cols("AE")
+  vocabfreq_AE$vocab <- vocabfreq_AE %>% rownames
+  names(vocabfreq_AE) <- c("freq","AEorERE","vocab")
+  rownames(vocabfreq_AE) <- c()
+  vocabfreq_AE <- vocabfreq_AE %>% arrange(-freq) %>% head(30)
+  
+  newcorp_sub <- newcorpus %>% filter(topic == topiclistpub$Topic.Name[which(topiclistpub$Topic.No==i)], AEorERE=="ERE")
+  vocabfreq_ERE <- newcorp_sub$Abstract %>% VectorSource() %>% Corpus() %>% tm_map(content_transformer(tolower)) %>% tm_map(removeWords, c(stopwords("smart"), stopwords("french"),"elsevier", "wiley", "sons", "inc", "may","ltd")) %>% tm_map(removeNumbers) %>% tm_map(removePunctuation) %>% tm_map(stemDocument, language = "english") %>% TermDocumentMatrix() %>% as.matrix() %>% rowSums() %>% as.data.frame() %>% bind_cols("ERE")
+  vocabfreq_ERE$vocab <- vocabfreq_ERE %>% rownames
+  names(vocabfreq_ERE) <- c("freq","AEorERE","vocab")
+  rownames(vocabfreq_ERE) <- c()
+  vocabfreq_ERE <- vocabfreq_ERE %>% arrange(-freq) %>% head(30)
+  
+  vocabfreq <- bind_rows(vocabfreq_AE,vocabfreq_ERE) %>% arrange(desc(vocab))
+  vocabfreq$freq <- (vocabfreq$freq-min(vocabfreq$freq))/(max(vocabfreq$freq)-min(vocabfreq$freq))
+
+  
+  cloudlist[[which(arrange(topiclistpub, Topic.Name)$Topic.No==i)]] <- 
+    
+    ggplot(
+      vocabfreq,
+      aes(
+        label = vocab, size = freq, x = AEorERE, col = AEorERE
+      )
+    ) +
+    ggwordcloud::geom_text_wordcloud_area() +
+    #scale_size_area(max_size = 10) +
+    scale_x_discrete(breaks = NULL) +
+    theme_minimal() +
+    labs(x=NULL) +
+    #facet_wrap(~AEorERE) + 
+    ggtitle(topiclistpub$Topic.Name[which(topiclistpub$Topic.No==i)])
+}
+p2 <- plot_grid(plotlist = cloudlist, nrow=5)
+
+ggsave( paste0(here(),"/figs/fig4.pdf"), p2,  height = 10, width = 8.8, units = "in")
 
 
-# produce all plots together ----
+# co-citation network from bibliometrix ----
+
+net = list()
+networkplots <- list()
+for (l in topiclistpub$Topic.No %>% as.numeric()) {
+  lit <-
+    literature %>%
+    slice(thoughts.int$index[topiclistpub$Topic.No %>% as.numeric()][[which(topiclistpub$Topic.No %>% as.numeric() == l)]]) %>%   # subsetting to row indices of 100 most probable word for topic in topiclistpub
+    select(CitedReferences)
+  CR <- lit$CitedReferences
+  FCAU = list(NULL)
+  CCR = NULL
+  size = dim(lit)
+  listCAU = strsplit(as.character(CR), ";")
+  for (i in 1:size[1]) {
+    elem = strsplit(as.character(listCAU[[i]]), ",")
+    ind = lengths(elem)
+    if (max(ind) > 2) {
+      elem = elem[ind > 2]
+      FCAU[[i]] = bibliometrix::trim.leading(unlist(lapply(elem,
+                                                           function(l)
+                                                             l[[3]])))
+      CCR[i] = paste(FCAU[[i]], collapse = ";")
+    }
+    else {
+      CCR[[i]] = NA
+    }
+  }
+  
+  Fi <- strsplit(CCR, ";")
+  Fi <- lapply(Fi, bibliometrix::trim.leading)
+  
+  uniqueField <- names(table(literature$SourceAbbreviation))
+  
+  Fi <- lapply(Fi, function(l) {
+    l <- gsub("\\,", ";", l)
+    l <- sub("\\;", ",", l)
+    l <- sub("\\;", ",", l)
+    l <- gsub("\\;.*", "", l)
+    l <- l[nchar(l) > 0]
+    return(l)
+  })
+  
+  WSO <-
+    matrix(0, size[1], length(uniqueField)) # quite big may need carbage collection gc() or a new R session
+  colnames(WSO) <- uniqueField
+
+  for (i in 1:size[1]) {
+    if (length(Fi[[i]]) > 0) {
+      WSO[i, uniqueField %in% Fi[[i]]] <- 1
+    }
+  }
+  
+  WSO = WSO[, !is.na(uniqueField)]
+  
+  NetMatrix = NA
+  NetMatrix = crossprod(WSO, WSO)
+  NetMatrix = NetMatrix[nchar(colnames(NetMatrix)) != 0, nchar(colnames(NetMatrix)) !=
+                          0]
+  net[[which(topiclistpub$Topic.No %>% as.numeric() == l)]] = bibliometrix::networkPlot(
+    NetMatrix,
+    degree = 2,
+    Title = paste("Co-Citation Network for topic",l, sep=" "),
+    type = "kamada",
+    size.cex = TRUE,
+    size = 15,
+    remove.multiple = T,
+    remove.isolates = T,
+    noloops = T,
+    labelsize = 0.7,
+    edgesize = 10,
+    edges.min = 2,
+    cluster = "edge_betweenness",
+    halo = F
+  )
+  
+}
+
 
 # function to capitalize first letter
 simpleCap <- function(x) {
@@ -259,178 +294,49 @@ simpleCap <- function(x) {
         sep="", collapse=" ")
 }
 
+# plot co-citation network
+netw.plot.list <- list()
 
-j <- 1
-for (i in topiclistpub$Topic.No) {
-  plot.STM(
-    stm.mod.spec.LeeMimno.cont,
-    type = "perspectives",
-    plabels = c("AE","ERE"),
-    main = "Field perspective wordcloud",
-    topics = i,
-    n = 50
-  )
-  grid.echo()
-  persp.plot <- grid.grab()
-  grid.newpage()
-  persp.plot <-
-    editGrob(
-      persp.plot,
-      vp = viewport(width = unit(6, "in"), height = unit(7.5, "in")),
-      gp = gpar(fontsize = 12)
-    )
-  grid.draw(persp.plot)
-  persp.plot <- as.ggplot(persp.plot) # require(ggplotify)
+
+for (i in topiclistpub$Topic.No %>% as.numeric) {
+
+  V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$color <- as.character(ifelse(V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name %in% tolower(c("AGR ECON","APPL ECON PERSPECT P","AM J AGR ECON","AUST J AGR RESOUR EC","CAN J AGR ECON","EUR REV AGRIC ECON","FOOD POLICY","AGRIBUSINESS","J AGR ECON","J AGR RESOUR ECON")), "#F8766D","#00BFC4"))
+
+  V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$label.cex = V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$size/10
+
+  V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$size <- V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$size*2
+
+  png(paste(here(), "/figs/networkplot",i,".png",sep = ""),width = 14, height = 14, units = "cm", res = 300)
   
   plot(
-    net[[which(topiclistpub$Topic.No == i)]]$graph,
+    net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph,
     rescale = T,
     asp = 0,
-    ylim = c(-1, 1),
-    xlim = c(-1, 1),
+    ylim = c(-1.2, 1.2),
+    xlim = c(-1.2, 1.2),
     edge.curved = F,
     layout =  layout_in_circle,
     vertex.label.family = "sans",
     vertex.label.dist = 0.7,
     vertex.frame.color = "black",
     vertex.label.color = "black",
-    vertex.label.font = 1,
-    vertex.label = sapply(tolower(V(net[[which(topiclistpub == i)]]$graph)$name),simpleCap),
-    main = "Co-Citation Network",
+    main = "",
+    #vertex.label.font = 1,
+    vertex.label = sapply(tolower(V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name),simpleCap),
+    #vertex.label.cex = 1,
     edge.color = "gray"
+    #vertex.size=10
   )
-  netw.plot <- recordPlot()
-  dev.off()
-  png(paste(here(), "/figs/networkplot",i,".png",sep = ""),width = 16, height = 12, units = "cm", res = 300)
-  replayPlot(netw.plot)
+  title(paste0( topiclistpub$Topic.Name[which(topiclistpub$Topic.No %>% as.numeric() == i)]),cex.main=2, line = -1)
   dev.off()
   
-  netw.plot <- ggdraw() + draw_image(paste(here(),"/figs/networkplot",i,".png",sep = ""), scale = 1)
-  
-  plot.new()
+  magick::image_crop(magick::image_read(paste(here(), "/figs/networkplot",i,".png",sep = "")), "1513x1220+135-415",  gravity = "southwest") %>% magick::image_write(paste(here(), "/figs/networkplot",i,".png",sep = ""))
 
-  title <- ggdraw() + draw_label(topiclistpub$Topic.Name[which(topiclistpub$Topic.No == i)], fontface = "bold", size = 18)
-  
-  #plotting in grid
-  plot_grid(
-    title,
-    plot_grid(#persp.plot,
-                      gplots.cont.int[[i]],
-                      persp.plot,
-                      ncol = 2,
-                      rel_widths = c(2,1)),
-    plot_grid(
-              #netw.plot,
-              # plot.new(),
-              netw.plot,
-              time.plots[[i]],
-              ncol = 2,
-              rel_widths = c(1, 1.5)
-            ),
-    ncol = 1,
-    rel_heights = c(0.15, 1, 1)
-    )
+  netw.plot.list[[which(arrange(topiclistpub, Topic.Name)$Topic.No==i)]] <- ggdraw() + draw_image(paste(here(),"/figs/networkplot",i,".png",sep = ""), scale = 1)
 
-    j <- j + 1
-  
-  ggsave(
-    paste("Topic", i, ".png", sep = ""),
-    width = 40,
-    height = 25,
-    units = "cm",
-    dpi = 300
-  )
 }
 
-rm(list = c("i", "j", "m", "n"))
+(p3 <- plot_grid(plotlist = netw.plot.list, nrow=5))
 
-
-# output supplementary information ----
-
-n = 20 #how many words
-
-# get topic description / keywords by different measures
-sageLabs.int <- sageLabels(stm.mod.spec.LeeMimno.cont.int, n = n)
-labels.int <- labelTopics(stm.mod.spec.LeeMimno.cont.int, n = n)
-
-# write xlsx file with keyword topic descriptions on all topics
-
-# extract most propable words by different measures 
-probs <- vector();frexs <- vector(); probsAE <- vector(); probsERE <- vector(); frexsAE <- vector(); frexsERE <- vector()
-
-for (i in 1:stm.mod.spec.LeeMimno.cont.int$settings$dim$K) {
-  p <-
-    paste(sageLabs.int$marginal$prob[i, ], collapse = ", ")
-  probs <- cbind(probs, p)
-}
-for (i in 1:stm.mod.spec.LeeMimno.cont.int$settings$dim$K) {
-  p <-
-    paste(sageLabs.int$marginal$frex[i, ], collapse = ", ")
-  frexs <- cbind(frexs, p)
-}
-for (i in 1:stm.mod.spec.LeeMimno.cont.int$settings$dim$K) {
-  p <-
-    paste(sageLabs.int$cov.betas[[1]]$problabels[i,], collapse = ", ")
-  
-  probsAE <-
-    cbind(probsAE, p)
-}
-for (i in 1:stm.mod.spec.LeeMimno.cont.int$settings$dim$K) {
-  p <-
-    paste(sageLabs.int$cov.betas[[2]]$problabels[i,], collapse = ", ")
-  
-  probsERE <-
-    cbind(probsERE, p)
-}
-for (i in 1:stm.mod.spec.LeeMimno.cont.int$settings$dim$K) {
-  p <-
-    paste(sageLabs.int$cov.betas[[1]]$frexlabels[i,], collapse = ", ")
-  
-  frexsAE <-
-    cbind(frexsAE, p)
-}
-for (i in 1:stm.mod.spec.LeeMimno.cont.int$settings$dim$K) {
-  p <-
-    paste(sageLabs.int$cov.betas[[2]]$frexlabels[i,], collapse = ", ")
-  
-  frexsERE <-
-    cbind(frexsERE, p)
-}
-
-# built a dataframe
-allx <- as.data.frame(cbind(c(1:64),t(probs),t(frexs),t(probsAE),t(frexsAE),t(probsERE),t(frexsERE)))
-names(allx) <- c("Topic#","Top10 prob keyword","Top10 frex keywords","Top10 prob keyword AE","Top10 frex keywords AE","Top10 prob keyword ERE","Top10 frex keywordsERE")
-
-# write out xlss
-wb <- createWorkbook(type = "xlsx")
-sheet  <- createSheet(wb, sheetName = "keywords")
-addDataFrame(allx, sheet,col.names = TRUE, row.names = F)
-saveWorkbook(wb, paste(here(),"/SI/AllKeywords.xlsx", sep = ""))
-
-
-# top 250 most probable doc per topic and order by citation counts
-thoughts.int <-
-  findThoughts(
-    stm.mod.spec.LeeMimno.cont.int,
-    texts = literature$Abstract,
-    n = 250,
-    topics = 1:stm.mod.spec.LeeMimno.cont.int$settings$dim$K
-  )
-top.most.prob.docs.int <-
-  as.data.frame(t(as.data.frame(thoughts.int$index)))
-
-# write top 250 most propable articles to excel file
-wb <- createWorkbook(type = "xlsx")
-for (i in topiclistpub$Topic.No) {
-  df <-
-    literature[as.numeric(top.most.prob.docs.int[i, ]), c("Authors",
-                                                          "YearPublished",
-                                                          "ISOSourceAbbreviation", "DocumentTitle",
-                                                          "Abstract", "TimesCited")]
-  df <- df[order(df$TimesCited, decreasing = T),]
-  sheet  <- createSheet(wb, sheetName = paste(topiclistpub$Topic.Name[which(topiclistpub$Topic.No==i)]))
-  addDataFrame(df, sheet, col.names = TRUE, row.names = F)
-}
-saveWorkbook(wb, paste(here(), "/SI/Top250Articles.xlsx", sep=""))
-rm(list = c("wb", "sheet", "df"))
+ggsave( paste0(here(),"/figs/Fig5.pdf"), p3,  height = 8, width = 6, units = "in")
 
