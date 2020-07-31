@@ -287,13 +287,6 @@ for (l in topiclistpub$Topic.No %>% as.numeric()) {
 }
 
 
-# function to capitalize first letter
-simpleCap <- function(x) {
-  s <- strsplit(x, " ")[[1]]
-  paste(toupper(substring(s, 1,1)), substring(s, 2),
-        sep="", collapse=" ")
-}
-
 # plot co-citation network
 netw.plot.list <- list()
 
@@ -301,6 +294,8 @@ netw.plot.list <- list()
 for (i in topiclistpub$Topic.No %>% as.numeric) {
 
   V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$color <- as.character(ifelse(V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name %in% tolower(c("AGR ECON","APPL ECON PERSPECT P","AM J AGR ECON","AUST J AGR RESOUR EC","CAN J AGR ECON","EUR REV AGRIC ECON","FOOD POLICY","AGRIBUSINESS","J AGR ECON","J AGR RESOUR ECON")), "#F8766D","#00BFC4"))
+
+  V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name <- V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name %>% recode("agr econ" = "AE", "agribusiness" = "AB", "am j agr econ" = "AJAE", "annu rev resour econ" = "ARRE", "appl econ perspect p" = "AEPP", "aust j agr resour ec" = "AJARE", "can j agr econ" = "CJAE", "ecol econ" = "EcE", "energ econ" = "EnE", "energ j" = "EJ", "environ resour econ" = "ERE", "eur rev agric econ" = "ERAE", "food policy" = "FP", "j agr econ" = "JAE","j agr resour econ" = "JARE", "j environ econ manag" = "JEEM", "land econ" = "LE", "mar resour econ" = "MRE", "resour energy econ" = "REE")
 
   V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$label.cex = V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$size/10
 
@@ -320,17 +315,15 @@ for (i in topiclistpub$Topic.No %>% as.numeric) {
     vertex.label.dist = 0.7,
     vertex.frame.color = "black",
     vertex.label.color = "black",
+    vertex.label.font = 1,
     main = "",
-    #vertex.label.font = 1,
-    vertex.label = sapply(tolower(V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name),simpleCap),
-    #vertex.label.cex = 1,
+    vertex.label = V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name,
     edge.color = "gray"
-    #vertex.size=10
   )
-  title(paste0( topiclistpub$Topic.Name[which(topiclistpub$Topic.No %>% as.numeric() == i)]),cex.main=2, line = -1)
+  title(paste0( topiclistpub$Topic.Name[which(topiclistpub$Topic.No %>% as.numeric() == i)]), font.main = 1 ,cex.main=1.5, line = -1)
   dev.off()
   
-  magick::image_crop(magick::image_read(paste(here(), "/figs/networkplot",i,".png",sep = "")), "1513x1220+135-415",  gravity = "southwest") %>% magick::image_write(paste(here(), "/figs/networkplot",i,".png",sep = ""))
+  magick::image_crop(magick::image_read(paste(here(), "/figs/networkplot",i,".png",sep = "")), "1513x1210+135-410",  gravity = "southwest") %>% magick::image_write(paste(here(), "/figs/networkplot",i,".png",sep = ""))
 
   netw.plot.list[[which(arrange(topiclistpub, Topic.Name)$Topic.No==i)]] <- ggdraw() + draw_image(paste(here(),"/figs/networkplot",i,".png",sep = ""), scale = 1)
 
