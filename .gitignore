@@ -7,7 +7,7 @@ data/*
 figs/*
 SI/*
 stminsights/*
-stminsights_*
+stminsights*
 check_updates.R
 CJAE.R
 doi.RData
@@ -16,4 +16,4 @@ OldCode.R
 STMwordclouds.R
 WoSNr.RData
 stminsights.R
-literature.R
+literature.RData
