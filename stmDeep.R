@@ -295,13 +295,13 @@ for (i in topiclistpub$Topic.No %>% as.numeric) {
 
   V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$color <- as.character(ifelse(V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name %in% tolower(c("AGR ECON","APPL ECON PERSPECT P","AM J AGR ECON","AUST J AGR RESOUR EC","CAN J AGR ECON","EUR REV AGRIC ECON","FOOD POLICY","AGRIBUSINESS","J AGR ECON","J AGR RESOUR ECON")), "#F8766D","#00BFC4"))
 
-  V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name <- V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name %>% recode("agr econ" = "AE", "agribusiness" = "AB", "am j agr econ" = "AJAE", "annu rev resour econ" = "ARRE", "appl econ perspect p" = "AEPP", "aust j agr resour ec" = "AJARE", "can j agr econ" = "CJAE", "ecol econ" = "EcE", "energ econ" = "EnE", "energ j" = "EJ", "environ resour econ" = "ERE", "eur rev agric econ" = "ERAE", "food policy" = "FP", "j agr econ" = "JAE","j agr resour econ" = "JARE", "j environ econ manag" = "JEEM", "land econ" = "LE", "mar resour econ" = "MRE", "resour energy econ" = "REE")
+  V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name <- V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name %>% recode("agr econ" = "AE", "agribusiness" = "AB", "am j agr econ" = "AJAE", "annu rev resour econ" = "ARRE", "appl econ perspect p" = "AEPP", "aust j agr resour ec" = "AJARE", "can j agr econ" = "CJAE", "ecol econ" = "EcE", "energ econ" = "EnE", "energ j" = "EJ", "environ resour econ" = "ERE", "eur rev agric econ" = "ERAE", "food policy" = "FP", "j agr econ" = "JAE","j agr resour econ" = "JARE", "j environ econ manag" = "JEEM", "land econ" = "LE", "mar resour econ" = "MRE", "resour energy econ" = "REE", "rev env econ policy" = "REEP")
 
   V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$label.cex = V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$size/10
 
   V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$size <- V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$size*2
 
-  png(paste(here(), "/figs/networkplot",i,".png",sep = ""),width = 14, height = 14, units = "cm", res = 300)
+  png(paste(here(), "/figs/networkplot",i,".png",sep = ""),width = 14, height = 14, units = "cm", res = 600)
   
   plot(
     net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph,
@@ -320,10 +320,10 @@ for (i in topiclistpub$Topic.No %>% as.numeric) {
     vertex.label = V(net[[which(topiclistpub$Topic.No %>% as.numeric() == i)]]$graph)$name,
     edge.color = "gray"
   )
-  title(paste0( topiclistpub$Topic.Name[which(topiclistpub$Topic.No %>% as.numeric() == i)]), font.main = 1 ,cex.main=1.5, line = -1)
+  title(paste0( topiclistpub$Topic.Name[which(topiclistpub$Topic.No %>% as.numeric() == i)]), font.main = 1 ,cex.main=1.8, line = -1)
   dev.off()
   
-  magick::image_crop(magick::image_read(paste(here(), "/figs/networkplot",i,".png",sep = "")), "1513x1210+135-410",  gravity = "southwest") %>% magick::image_write(paste(here(), "/figs/networkplot",i,".png",sep = ""))
+  magick::image_crop(magick::image_read(paste(here(), "/figs/networkplot",i,".png",sep = "")), "2168x2104+752+800",  gravity = "southwest") %>% magick::image_write(paste(here(), "/figs/networkplot",i,".png",sep = ""))
 
   netw.plot.list[[which(arrange(topiclistpub, Topic.Name)$Topic.No==i)]] <- ggdraw() + draw_image(paste(here(),"/figs/networkplot",i,".png",sep = ""), scale = 1)
 
@@ -331,5 +331,5 @@ for (i in topiclistpub$Topic.No %>% as.numeric) {
 
 (p3 <- plot_grid(plotlist = netw.plot.list, nrow=5))
 
-ggsave( paste0(here(),"/figs/Fig5.pdf"), p3,  height = 8, width = 6, units = "in")
+ggsave( paste0(here(),"/figs/Fig5.pdf"), p3,  height = 16, width = 12, units = "in")
 
