@@ -1,19 +1,24 @@
+# general
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
-Userdata.R
-data/*
-figs/*
-SI/*
-stminsights/*
-stminsights*
+
+# scripts
 check_updates.R
 CJAE.R
-doi.RData
-literature.RData
 OldCode.R
 STMwordclouds.R
+Userdata.R
+
+# Data
+doi.RData
+literature.RData
+stminsights*
 WoSNr.RData
-stminsights.R
-stminsights_*
+
+# Folders
+/SI/*
+/data/*
+/figs/*
+
