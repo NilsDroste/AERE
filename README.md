@@ -6,7 +6,7 @@ The paper **Topics in agricultural and environmental economics – a large-scale
 
 Please cite the source code with:
 
-[![DOI](https://zenodo.org/badge/121742448.svg)](https://zenodo.org/badge/latestdoi/121742448)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4055217.svg)](https://doi.org/10.5281/zenodo.4055217)
 
 **BUT** preferably the paper once published.
 
