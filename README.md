@@ -5,7 +5,9 @@ A project in collaboration with *Bartosz Bartkowski* and *Robert Finger*. This i
 The paper **Topics in agricultural and environmental economics – a large-scale bibliometric analysis** has been submitted.
 
 Please cite the source code with:
+
 [![DOI](https://zenodo.org/badge/121742448.svg)](https://zenodo.org/badge/latestdoi/121742448)
+
 **BUT** preferably the paper once published.
 
 In this repository you find:
